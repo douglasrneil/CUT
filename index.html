@@ -1,0 +1,1745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#15171B" />
+<title>The Cut — Macro Tracker</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%2315171B'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%23FF8552' font-family='Arial Black'%3EC%3C/text%3E%3C/svg%3E" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #15171B; }
+</style>
+<script>
+window.storage = {
+  async get(key) {
+    const v = localStorage.getItem("cut:" + key);
+    return v === null ? null : { key, value: v };
+  },
+  async set(key, value) {
+    localStorage.setItem("cut:" + key, value);
+    return { key, value };
+  },
+  async delete(key) {
+    localStorage.removeItem("cut:" + key);
+    return { key, deleted: true };
+  },
+  async list(prefix) {
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf("cut:") === 0) {
+        const bare = k.slice(4);
+        if (!prefix || bare.indexOf(prefix) === 0) keys.push(bare);
+      }
+    }
+    return { keys };
+  },
+};
+</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const svgProps = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", viewBox: "0 0 24 24" };
+const Search = (p) => (<svg {...svgProps} {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>);
+const X = (p) => (<svg {...svgProps} {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>);
+const Plus = (p) => (<svg {...svgProps} {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>);
+const Check = (p) => (<svg {...svgProps} {...p}><polyline points="20 6 9 17 4 12"/></svg>);
+const Trash2 = (p) => (<svg {...svgProps} {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>);
+const Camera = (p) => (<svg {...svgProps} {...p}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>);
+const Settings = (p) => (<svg {...svgProps} {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>);
+const Loader2 = (p) => (<svg {...svgProps} {...p}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>);
+const Pencil = (p) => (<svg {...svgProps} {...p}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>);
+
+const { useState, useEffect, useRef } = React;
+
+const DEFAULT_TARGETS = { calories: 2000, protein: 175, carbs: 180, fat: 62, maintenance: 2900 };
+
+// Food database: [name, calories, protein g, carbs g, fat g] per serving shown.
+// Chain items approximate published nutrition; generic meals are typical restaurant portions.
+const RAW_DB = [
+  // ---- Basics: proteins ----
+  ["Chicken breast (6 oz cooked)", 280, 53, 0, 6],
+  ["Chicken thigh (6 oz cooked)", 360, 44, 0, 20],
+  ["Rotisserie chicken (1/4 bird)", 340, 40, 0, 19],
+  ["Ground beef 90/10 (6 oz cooked)", 310, 44, 0, 14],
+  ["Ground beef 80/20 (6 oz cooked)", 410, 41, 0, 27],
+  ["Steak, sirloin (6 oz)", 310, 46, 0, 13],
+  ["Ribeye steak (10 oz)", 650, 50, 0, 48],
+  ["Pork chop (6 oz)", 350, 45, 0, 18],
+  ["Bacon (2 slices)", 90, 6, 0, 7],
+  ["Breakfast sausage (2 links)", 170, 9, 1, 15],
+  ["Sausage patty (1)", 100, 5, 0, 9],
+  ["Deli turkey (3 oz)", 90, 18, 2, 1],
+  ["Ham (3 oz)", 100, 16, 1, 3],
+  ["Salmon (6 oz)", 350, 38, 0, 21],
+  ["White fish / tilapia (6 oz)", 220, 44, 0, 4],
+  ["Canned tuna (1 can in water)", 100, 22, 0, 1],
+  ["Shrimp (6 oz)", 170, 34, 1, 2],
+  ["Egg (1 large)", 72, 6, 0, 5],
+  ["Eggs, 2 fried in butter", 180, 13, 1, 13],
+  ["Egg whites (1/4 cup)", 30, 7, 0, 0],
+  ["Tofu (1/2 block)", 180, 18, 4, 10],
+  ["Greek yogurt, nonfat (1 cup)", 130, 23, 9, 0],
+  ["Cottage cheese (1 cup)", 180, 25, 8, 5],
+  ["Whey protein (1 scoop)", 120, 24, 3, 1],
+  ["Protein bar", 200, 20, 22, 7],
+  ["Protein shake, premade", 160, 30, 5, 3],
+  // ---- Basics: dairy, carbs, produce, fats ----
+  ["Cheddar cheese (1 oz)", 115, 7, 0, 9],
+  ["String cheese (1 stick)", 80, 7, 1, 6],
+  ["Milk, 2% (1 cup)", 120, 8, 12, 5],
+  ["Milk, skim (1 cup)", 80, 8, 12, 0],
+  ["White rice (1 cup cooked)", 205, 4, 45, 0],
+  ["Brown rice (1 cup cooked)", 215, 5, 45, 2],
+  ["Quinoa (1 cup cooked)", 220, 8, 39, 4],
+  ["Pasta (1 cup cooked)", 220, 8, 43, 1],
+  ["Oatmeal (1/2 cup dry)", 150, 5, 27, 3],
+  ["Bread (1 slice)", 80, 3, 15, 1],
+  ["Bagel", 280, 11, 56, 2],
+  ["Bagel with cream cheese", 430, 12, 58, 16],
+  ["Flour tortilla (1 large)", 140, 4, 24, 4],
+  ["Corn tortilla", 60, 1, 12, 1],
+  ["Potato, baked (medium)", 160, 4, 37, 0],
+  ["Baked potato w/ butter & sour cream", 350, 6, 40, 18],
+  ["Sweet potato (medium)", 115, 2, 27, 0],
+  ["Banana (medium)", 105, 1, 27, 0],
+  ["Apple (medium)", 95, 0, 25, 0],
+  ["Orange (medium)", 60, 1, 15, 0],
+  ["Berries (1 cup)", 70, 1, 17, 0],
+  ["Grapes (1 cup)", 100, 1, 27, 0],
+  ["Broccoli (1 cup)", 30, 2, 6, 0],
+  ["Mixed vegetables (1 cup)", 60, 3, 12, 0],
+  ["Side salad, no dressing", 20, 1, 4, 0],
+  ["Avocado (half)", 120, 1, 6, 11],
+  ["Almonds (1 oz / handful)", 165, 6, 6, 14],
+  ["Peanut butter (2 tbsp)", 190, 7, 8, 16],
+  ["Hummus (2 tbsp)", 70, 2, 6, 5],
+  ["Black beans (1 cup)", 220, 15, 40, 1],
+  ["Lentils (1 cup cooked)", 230, 18, 40, 1],
+  ["Olive oil (1 tbsp)", 120, 0, 0, 14],
+  ["Butter (1 tbsp)", 100, 0, 0, 11],
+  ["Mayo (1 tbsp)", 90, 0, 0, 10],
+  ["Ranch dressing (2 tbsp)", 130, 0, 2, 13],
+  ["Caesar dressing (2 tbsp)", 150, 1, 1, 16],
+  ["Ketchup (1 tbsp)", 20, 0, 5, 0],
+  ["BBQ sauce (2 tbsp)", 60, 0, 14, 0],
+  ["Honey (1 tbsp)", 64, 0, 17, 0],
+  ["Sugar (1 tsp)", 16, 0, 4, 0],
+  // ---- McDonald's ----
+  ["McDonald's Big Mac", 590, 25, 46, 34],
+  ["McDonald's Quarter Pounder w/ Cheese", 520, 30, 42, 26],
+  ["McDonald's Double Quarter Pounder w/ Cheese", 740, 48, 43, 42],
+  ["McDonald's McDouble", 400, 22, 33, 20],
+  ["McDonald's Cheeseburger", 300, 15, 32, 13],
+  ["McDonald's Hamburger", 250, 12, 31, 9],
+  ["McDonald's McChicken", 400, 14, 39, 21],
+  ["McDonald's Crispy Chicken Sandwich", 470, 27, 45, 20],
+  ["McDonald's Spicy Crispy Chicken Sandwich", 530, 27, 47, 26],
+  ["McDonald's Filet-O-Fish", 390, 16, 39, 19],
+  ["McDonald's Chicken McNuggets (10 pc)", 410, 23, 25, 24],
+  ["McDonald's Chicken McNuggets (4 pc)", 170, 9, 10, 10],
+  ["McDonald's Fries (medium)", 320, 5, 43, 15],
+  ["McDonald's Fries (large)", 480, 7, 65, 23],
+  ["McDonald's Egg McMuffin", 310, 17, 30, 13],
+  ["McDonald's Sausage McMuffin w/ Egg", 480, 21, 30, 31],
+  ["McDonald's Sausage Burrito", 300, 12, 25, 16],
+  ["McDonald's Hash Browns", 140, 2, 17, 8],
+  ["McDonald's Hotcakes w/ syrup & butter", 580, 9, 102, 15],
+  ["McDonald's Big Breakfast w/ Hotcakes", 1340, 36, 158, 63],
+  ["McDonald's McFlurry Oreo (regular)", 510, 12, 80, 17],
+  ["McDonald's Vanilla Cone", 200, 5, 33, 5],
+  // ---- Chick-fil-A ----
+  ["Chick-fil-A Chicken Sandwich", 420, 28, 41, 18],
+  ["Chick-fil-A Deluxe Sandwich", 500, 32, 43, 23],
+  ["Chick-fil-A Spicy Chicken Sandwich", 450, 28, 45, 19],
+  ["Chick-fil-A Grilled Chicken Sandwich", 390, 28, 44, 12],
+  ["Chick-fil-A Nuggets (8 ct)", 250, 27, 11, 11],
+  ["Chick-fil-A Nuggets (12 ct)", 380, 40, 16, 17],
+  ["Chick-fil-A Grilled Nuggets (8 ct)", 130, 25, 1, 3],
+  ["Chick-fil-A Waffle Fries (medium)", 420, 5, 45, 24],
+  ["Chick-fil-A Mac & Cheese (medium)", 450, 17, 29, 29],
+  ["Chick-fil-A Chicken Biscuit", 460, 19, 45, 23],
+  ["Chick-fil-A Cobb Salad w/ Nuggets (no dressing)", 540, 40, 28, 29],
+  ["Chick-fil-A Market Salad (no dressing)", 340, 28, 26, 14],
+  ["Chick-fil-A Lemonade (medium)", 220, 0, 58, 0],
+  ["Chick-fil-A Milkshake (cookies & cream)", 630, 13, 89, 25],
+  ["Chick-fil-A Chick-n-Strips (3 ct)", 310, 29, 16, 14],
+  // ---- Chipotle ----
+  ["Chipotle Chicken Bowl (rice, beans, salsa, cheese)", 750, 54, 70, 25],
+  ["Chipotle Chicken Burrito (typical)", 1000, 55, 105, 35],
+  ["Chipotle Chicken (portion)", 180, 32, 0, 7],
+  ["Chipotle Steak (portion)", 150, 21, 1, 6],
+  ["Chipotle Carnitas (portion)", 210, 23, 0, 12],
+  ["Chipotle Barbacoa (portion)", 170, 24, 2, 7],
+  ["Chipotle White Rice", 210, 4, 40, 4],
+  ["Chipotle Black Beans", 130, 8, 22, 2],
+  ["Chipotle Cheese", 110, 6, 1, 8],
+  ["Chipotle Sour Cream", 110, 2, 2, 9],
+  ["Chipotle Guacamole", 230, 2, 8, 22],
+  ["Chipotle Queso Blanco", 120, 5, 4, 9],
+  ["Chipotle Chips (bag)", 540, 7, 73, 25],
+  ["Chipotle Flour Tortilla", 320, 9, 50, 9],
+  // ---- Subway ----
+  ["Subway 6\" Turkey Breast", 250, 18, 40, 3],
+  ["Subway Footlong Turkey Breast", 500, 36, 80, 6],
+  ["Subway 6\" Italian BMT", 390, 19, 40, 17],
+  ["Subway 6\" Meatball Marinara", 430, 19, 54, 15],
+  ["Subway 6\" Tuna", 450, 19, 39, 24],
+  ["Subway 6\" Chicken & Bacon Ranch", 570, 34, 41, 30],
+  ["Subway 6\" Steak & Cheese", 340, 25, 39, 10],
+  ["Subway 6\" Veggie Delite", 200, 8, 38, 2],
+  // ---- Taco Bell ----
+  ["Taco Bell Crunchy Taco", 170, 8, 13, 9],
+  ["Taco Bell Soft Taco (beef)", 180, 9, 17, 9],
+  ["Taco Bell Crunchwrap Supreme", 530, 16, 71, 21],
+  ["Taco Bell Bean Burrito", 350, 13, 54, 9],
+  ["Taco Bell Burrito Supreme (beef)", 390, 16, 49, 14],
+  ["Taco Bell Chicken Quesadilla", 510, 26, 37, 27],
+  ["Taco Bell Nachos BellGrande", 740, 16, 82, 38],
+  ["Taco Bell Chalupa Supreme (beef)", 350, 13, 33, 18],
+  ["Taco Bell Mexican Pizza", 550, 19, 44, 32],
+  ["Taco Bell Cheesy Gordita Crunch", 500, 20, 41, 28],
+  // ---- Wendy's ----
+  ["Wendy's Dave's Single", 590, 30, 38, 34],
+  ["Wendy's Dave's Double", 850, 49, 39, 53],
+  ["Wendy's Jr. Bacon Cheeseburger", 380, 19, 27, 22],
+  ["Wendy's Baconator", 960, 57, 40, 62],
+  ["Wendy's Spicy Chicken Sandwich", 500, 28, 49, 21],
+  ["Wendy's Grilled Chicken Sandwich", 350, 33, 36, 9],
+  ["Wendy's Nuggets (10 pc)", 450, 23, 27, 29],
+  ["Wendy's Fries (medium)", 420, 6, 55, 19],
+  ["Wendy's Chili (small)", 240, 16, 22, 11],
+  ["Wendy's Chili (large)", 330, 23, 30, 15],
+  ["Wendy's Frosty (medium)", 470, 12, 76, 13],
+  ["Wendy's Baked Potato (plain)", 270, 7, 61, 0],
+  // ---- Burger King ----
+  ["Burger King Whopper", 670, 28, 49, 40],
+  ["Burger King Whopper w/ Cheese", 760, 32, 50, 47],
+  ["Burger King Whopper Jr.", 330, 14, 27, 18],
+  ["Burger King Bacon King", 1150, 61, 49, 79],
+  ["Burger King Original Chicken Sandwich", 660, 23, 61, 36],
+  ["Burger King Fries (medium)", 380, 4, 53, 17],
+  ["Burger King Croissan'wich (sausage egg cheese)", 500, 18, 29, 35],
+  // ---- Whataburger ----
+  ["Whataburger (original)", 590, 26, 56, 29],
+  ["Whataburger w/ Cheese", 680, 30, 57, 36],
+  ["Whataburger Double Meat", 830, 45, 57, 46],
+  ["Whataburger Honey Butter Chicken Biscuit", 590, 17, 54, 34],
+  ["Whataburger Fries (medium)", 420, 6, 56, 20],
+  // ---- Zaxby's / KFC / Popeyes ----
+  ["Zaxby's Chicken Fingers (5)", 630, 48, 41, 29],
+  ["Zaxby's Signature Sandwich", 700, 32, 54, 38],
+  ["Zaxby's Crinkle Fries (regular)", 390, 5, 51, 18],
+  ["KFC Original Recipe Breast", 390, 39, 11, 21],
+  ["KFC Original Recipe Drumstick", 130, 12, 4, 7],
+  ["KFC Original Recipe Thigh", 280, 19, 9, 19],
+  ["KFC Tenders (3)", 390, 28, 23, 20],
+  ["KFC Famous Bowl", 710, 27, 80, 32],
+  ["KFC Chicken Sandwich", 650, 29, 49, 35],
+  ["KFC Mashed Potatoes w/ Gravy", 130, 2, 19, 5],
+  ["KFC Biscuit", 180, 4, 23, 8],
+  ["KFC Coleslaw", 170, 1, 14, 12],
+  ["Popeyes Chicken Sandwich (classic)", 700, 28, 50, 42],
+  ["Popeyes Tenders (3)", 445, 34, 26, 22],
+  ["Popeyes Fried Chicken Breast", 380, 35, 16, 20],
+  ["Popeyes Red Beans & Rice (regular)", 230, 7, 29, 9],
+  ["Popeyes Cajun Fries (regular)", 260, 3, 33, 13],
+  ["Popeyes Biscuit", 210, 3, 26, 10],
+  // ---- Five Guys / Sonic / Arby's / subs ----
+  ["Five Guys Hamburger", 700, 39, 39, 43],
+  ["Five Guys Cheeseburger", 840, 47, 40, 55],
+  ["Five Guys Little Cheeseburger", 610, 32, 39, 32],
+  ["Five Guys Bacon Cheeseburger", 920, 51, 40, 62],
+  ["Five Guys Fries (little)", 530, 8, 72, 23],
+  ["Five Guys Fries (regular)", 950, 15, 131, 41],
+  ["Sonic Cheeseburger", 720, 33, 55, 39],
+  ["Sonic Tots (medium)", 360, 4, 40, 21],
+  ["Sonic Corn Dog", 230, 6, 23, 13],
+  ["Arby's Classic Roast Beef", 360, 23, 37, 14],
+  ["Arby's Beef 'n Cheddar", 450, 23, 45, 20],
+  ["Arby's Curly Fries (medium)", 410, 5, 49, 22],
+  ["Jersey Mike's Turkey Sub (regular)", 550, 35, 60, 18],
+  ["Jersey Mike's Italian Sub (regular)", 830, 40, 62, 47],
+  ["Jimmy John's Turkey Tom", 510, 26, 54, 21],
+  // ---- Panda Express ----
+  ["Panda Express Orange Chicken", 490, 25, 51, 23],
+  ["Panda Express Beijing Beef", 470, 13, 46, 26],
+  ["Panda Express Broccoli Beef", 150, 9, 13, 7],
+  ["Panda Express Kung Pao Chicken", 290, 16, 12, 19],
+  ["Panda Express Grilled Teriyaki Chicken", 275, 33, 8, 13],
+  ["Panda Express Honey Walnut Shrimp", 360, 13, 35, 23],
+  ["Panda Express Chow Mein", 510, 13, 80, 20],
+  ["Panda Express Fried Rice", 520, 11, 85, 16],
+  ["Panda Express Super Greens", 90, 6, 10, 3],
+  ["Panda Express Egg Roll", 200, 6, 20, 10],
+  // ---- Pizza ----
+  ["Domino's Pepperoni Slice (large, hand tossed)", 300, 12, 34, 13],
+  ["Domino's Cheese Slice (large, hand tossed)", 280, 11, 34, 11],
+  ["Pizza Hut Pan Pepperoni Slice (large)", 330, 13, 35, 16],
+  ["Little Caesars Pepperoni Slice", 280, 14, 30, 12],
+  ["Papa John's Pepperoni Slice (large)", 310, 13, 36, 13],
+  ["Pizza slice (generic cheese)", 285, 12, 36, 10],
+  ["Personal pizza (whole, margherita)", 800, 30, 100, 30],
+  ["Breadstick (pizza chain)", 140, 4, 25, 3],
+  ["Buffalo wings, traditional (6)", 510, 48, 4, 32],
+  ["Buffalo wing, traditional (1)", 90, 8, 1, 6],
+  ["Boneless wings (order of 10)", 640, 34, 48, 36],
+  // ---- Starbucks / Dunkin ----
+  ["Starbucks Caffè Latte (grande, 2%)", 190, 13, 19, 7],
+  ["Starbucks Vanilla Latte (grande)", 250, 12, 37, 6],
+  ["Starbucks Caramel Macchiato (grande)", 250, 10, 35, 7],
+  ["Starbucks Mocha (grande)", 370, 14, 44, 15],
+  ["Starbucks White Chocolate Mocha (grande)", 430, 15, 55, 18],
+  ["Starbucks Cold Brew (black)", 5, 0, 0, 0],
+  ["Starbucks Vanilla Sweet Cream Cold Brew (grande)", 110, 1, 14, 6],
+  ["Starbucks Caramel Frappuccino (grande)", 380, 5, 55, 16],
+  ["Starbucks Bacon Gouda Sandwich", 360, 17, 34, 18],
+  ["Starbucks Sausage Cheddar Sandwich", 480, 18, 40, 28],
+  ["Starbucks Turkey Bacon Egg White Sandwich", 230, 17, 28, 6],
+  ["Starbucks Egg White Bites", 170, 12, 11, 8],
+  ["Starbucks Bacon Egg Bites", 300, 19, 9, 22],
+  ["Starbucks Butter Croissant", 260, 5, 32, 13],
+  ["Starbucks Blueberry Muffin", 360, 6, 50, 15],
+  ["Dunkin' Coffee w/ cream & sugar (medium)", 120, 1, 19, 5],
+  ["Dunkin' Glazed Donut", 260, 3, 31, 14],
+  ["Dunkin' Boston Kreme Donut", 300, 4, 39, 14],
+  ["Dunkin' Bacon Egg Cheese Croissant", 560, 20, 42, 35],
+  ["Dunkin' Wake-Up Wrap (bacon)", 240, 10, 14, 15],
+  ["Dunkin' Hash Browns", 130, 1, 16, 7],
+  // ---- Panera ----
+  ["Panera Broccoli Cheddar Soup (cup)", 360, 14, 24, 24],
+  ["Panera Broccoli Cheddar Soup (bowl)", 540, 21, 36, 36],
+  ["Panera Mac & Cheese (cup)", 480, 17, 34, 30],
+  ["Panera Caesar Salad w/ Chicken", 470, 34, 22, 28],
+  ["Panera Green Goddess Cobb w/ Chicken", 530, 41, 28, 29],
+  ["Panera Bacon Turkey Bravo (half)", 400, 24, 37, 18],
+  ["Panera Bacon Turkey Bravo (whole)", 810, 48, 74, 36],
+  ["Panera Chipotle Chicken Avocado Melt (half)", 420, 22, 33, 22],
+  // ---- Casual dining chains ----
+  ["Olive Garden Chicken Alfredo", 1480, 59, 95, 90],
+  ["Olive Garden Spaghetti w/ Meat Sauce", 710, 26, 92, 23],
+  ["Olive Garden Lasagna Classico", 930, 49, 70, 50],
+  ["Olive Garden Chicken Parmigiana", 1060, 63, 79, 52],
+  ["Olive Garden Breadstick (1)", 140, 5, 25, 2],
+  ["Olive Garden Salad w/ dressing (1 serving)", 150, 2, 10, 11],
+  ["Texas Roadhouse 6 oz Sirloin", 250, 46, 0, 6],
+  ["Texas Roadhouse Ribs (half rack)", 750, 50, 30, 50],
+  ["Texas Roadhouse Loaded Baked Potato", 450, 12, 50, 24],
+  ["Texas Roadhouse Roll w/ Cinnamon Butter", 230, 4, 28, 12],
+  ["Texas Roadhouse Country Fried Chicken", 750, 45, 60, 38],
+  ["Outback Bloomin' Onion (1/4 of it)", 490, 5, 31, 39],
+  ["Outback Ribeye (12 oz)", 700, 55, 1, 54],
+  ["Outback Alice Springs Chicken", 740, 60, 15, 48],
+  ["Chili's/Applebee's Chicken Quesadilla (full)", 1100, 50, 70, 68],
+  ["Chili's/Applebee's Chicken Fajitas (w/ tortillas)", 850, 50, 80, 35],
+  ["Chili's/Applebee's Southwest Eggrolls (order)", 810, 27, 71, 46],
+  ["Cracker Barrel Chicken n' Dumplins", 500, 29, 49, 21],
+  ["Cracker Barrel Country Fried Steak", 660, 33, 40, 40],
+  ["Cracker Barrel Hashbrown Casserole", 190, 5, 21, 10],
+  ["Cracker Barrel Biscuit w/ Butter", 210, 4, 25, 10],
+  ["Waffle House Waffle", 410, 7, 47, 21],
+  ["Waffle House Hashbrowns (regular)", 190, 2, 26, 9],
+  ["Waffle House Hashbrowns smothered & covered", 290, 8, 28, 16],
+  ["Waffle House All-Star Special (full plate)", 1000, 35, 90, 55],
+  ["IHOP/Denny's Pancakes (stack of 3, no syrup)", 430, 11, 78, 8],
+  ["Pancake syrup (2 tbsp)", 110, 0, 27, 0],
+  ["Denny's Grand Slam (pancakes, eggs, bacon, sausage)", 850, 32, 64, 52],
+  ["IHOP Ham & Cheese Omelette", 660, 42, 8, 50],
+  // ---- Chinese takeout (generic) ----
+  ["General Tso's Chicken (entree, no rice)", 1000, 45, 80, 55],
+  ["Sesame Chicken (entree, no rice)", 950, 42, 78, 52],
+  ["Orange Chicken (entree, no rice)", 900, 42, 75, 48],
+  ["Sweet & Sour Chicken (entree)", 700, 30, 75, 30],
+  ["Beef & Broccoli (entree)", 550, 40, 25, 32],
+  ["Mongolian Beef (entree)", 700, 45, 45, 35],
+  ["Kung Pao Chicken (entree)", 600, 40, 30, 35],
+  ["Chicken Lo Mein (1 cup)", 260, 12, 33, 9],
+  ["Pork Fried Rice (1 cup)", 270, 10, 34, 10],
+  ["Egg Roll (1)", 200, 6, 20, 10],
+  ["Spring Roll (1)", 100, 3, 14, 4],
+  ["Crab Rangoon (1)", 70, 2, 7, 4],
+  ["Hot & Sour Soup (cup)", 90, 6, 10, 3],
+  ["Egg Drop Soup (cup)", 70, 4, 8, 2],
+  // ---- Sushi / Japanese ----
+  ["California Roll (8 pc)", 300, 9, 38, 12],
+  ["Spicy Tuna Roll (8 pc)", 350, 15, 36, 15],
+  ["Philadelphia Roll (8 pc)", 320, 12, 36, 14],
+  ["Shrimp Tempura Roll (8 pc)", 500, 12, 60, 21],
+  ["Salmon Nigiri (2 pc)", 120, 8, 12, 4],
+  ["Salmon Sashimi (3 oz)", 120, 18, 0, 5],
+  ["Miso Soup", 60, 4, 7, 2],
+  ["Edamame (1 cup)", 190, 17, 14, 8],
+  ["Hibachi Chicken plate (w/ rice & veg)", 900, 50, 90, 35],
+  ["Hibachi Steak plate (w/ rice & veg)", 950, 52, 88, 40],
+  ["Yum Yum Sauce (2 tbsp)", 160, 0, 3, 16],
+  // ---- Mexican (non-chain) ----
+  ["Street Taco, carne asada (1)", 150, 9, 13, 7],
+  ["Street Taco, chicken (1)", 140, 10, 13, 5],
+  ["Fish Tacos (2)", 500, 24, 50, 22],
+  ["Chicken Enchilada (1)", 250, 14, 20, 12],
+  ["Enchilada Plate (2, w/ rice & beans)", 900, 35, 95, 40],
+  ["Beef Chimichanga", 800, 30, 65, 45],
+  ["Chile Relleno (1)", 350, 15, 15, 25],
+  ["Chicken Fajita Plate (w/ tortillas)", 850, 50, 80, 35],
+  ["Refried Beans (1/2 cup)", 120, 7, 17, 3],
+  ["Mexican Rice (1/2 cup)", 110, 2, 22, 2],
+  ["Queso Dip w/ Chips (appetizer)", 700, 15, 60, 42],
+  ["Guacamole w/ Chips (appetizer)", 650, 8, 60, 40],
+  // ---- Italian (non-chain) ----
+  ["Chicken Parmesan w/ Pasta (plate)", 1100, 60, 90, 50],
+  ["Fettuccine Alfredo (plate)", 1000, 25, 90, 60],
+  ["Lasagna (1 piece)", 550, 30, 40, 28],
+  ["Spaghetti w/ Meat Sauce (plate)", 500, 25, 60, 17],
+  ["Penne alla Vodka (plate)", 900, 22, 100, 42],
+  ["Garlic Bread (2 pieces)", 300, 6, 34, 15],
+  // ---- Indian / Thai ----
+  ["Chicken Tikka Masala (entree)", 550, 35, 15, 38],
+  ["Butter Chicken (entree)", 600, 32, 16, 44],
+  ["Tandoori Chicken (quarter)", 260, 35, 3, 12],
+  ["Chana Masala (entree)", 300, 12, 45, 8],
+  ["Naan (1)", 260, 7, 45, 5],
+  ["Basmati Rice (1 cup)", 200, 4, 45, 1],
+  ["Samosa (1)", 130, 3, 17, 6],
+  ["Pad Thai w/ Chicken (entree)", 700, 30, 85, 25],
+  ["Thai Green Curry w/ Rice", 800, 30, 75, 40],
+  ["Drunken Noodles w/ Chicken", 750, 32, 90, 28],
+  ["Thai Fried Rice", 650, 22, 90, 22],
+  // ---- BBQ ----
+  ["Pulled Pork (6 oz)", 330, 29, 6, 20],
+  ["Pulled Pork Sandwich", 500, 30, 45, 20],
+  ["Smoked Brisket (6 oz)", 420, 40, 0, 28],
+  ["Pork Ribs (4 bones)", 500, 35, 15, 33],
+  ["Smoked Chicken (quarter)", 400, 45, 0, 24],
+  ["BBQ Mac & Cheese (side)", 330, 12, 30, 18],
+  ["Baked Beans (side)", 240, 9, 45, 2],
+  ["Cornbread (1 piece)", 200, 3, 28, 8],
+  ["Coleslaw (side)", 170, 1, 14, 12],
+  // ---- Seafood ----
+  ["Fish & Chips (plate)", 850, 35, 80, 45],
+  ["Fried Shrimp Basket w/ Fries", 900, 30, 80, 50],
+  ["Grilled Fish Plate w/ Sides", 600, 45, 40, 25],
+  ["Fried Catfish (2 fillets)", 400, 30, 15, 24],
+  ["Shrimp Po' Boy", 740, 28, 70, 38],
+  ["Hushpuppies (4)", 260, 4, 32, 12],
+  ["Crab Legs (1 lb, no butter)", 260, 50, 0, 4],
+  ["Drawn Butter (2 tbsp)", 200, 0, 0, 22],
+  ["Fried Oysters (6)", 370, 14, 30, 21],
+  // ---- Diner / American ----
+  ["Club Sandwich", 600, 30, 45, 32],
+  ["BLT Sandwich", 450, 15, 35, 28],
+  ["Grilled Cheese", 450, 14, 34, 28],
+  ["Patty Melt", 700, 35, 40, 44],
+  ["Philly Cheesesteak", 720, 40, 55, 38],
+  ["Reuben Sandwich", 680, 35, 45, 40],
+  ["Tuna Melt", 640, 30, 40, 38],
+  ["Turkey Sandwich (deli)", 350, 22, 40, 11],
+  ["PB&J Sandwich", 380, 12, 48, 16],
+  ["Chicken Tenders (4) w/ Fries basket", 980, 42, 90, 48],
+  ["Chicken Tender (1, fried)", 130, 10, 8, 6],
+  ["Mozzarella Sticks (6)", 560, 22, 48, 30],
+  ["Onion Rings (order)", 480, 6, 55, 26],
+  ["Loaded Nachos (appetizer)", 1100, 40, 90, 62],
+  ["Hot Dog w/ Bun", 300, 11, 24, 18],
+  ["Chili Dog", 350, 14, 28, 20],
+  ["Sloppy Joe", 450, 22, 45, 20],
+  ["Cheeseburger (restaurant, w/ bun)", 750, 40, 45, 44],
+  ["Hamburger (restaurant, w/ bun)", 650, 35, 44, 36],
+  ["Turkey Burger", 480, 30, 35, 24],
+  ["Veggie Burger", 390, 20, 40, 16],
+  ["Cheese Quesadilla (whole)", 750, 28, 60, 44],
+  ["Meatloaf Plate w/ Sides", 800, 40, 60, 42],
+  ["Chicken Pot Pie", 700, 25, 55, 42],
+  ["Country Fried Steak w/ Gravy", 620, 28, 35, 40],
+  ["Caesar Salad w/ Chicken (entree)", 470, 35, 15, 30],
+  ["Cobb Salad w/ Dressing (entree)", 750, 40, 15, 55],
+  ["Chef Salad (entree)", 450, 35, 12, 28],
+  ["House Salad w/ Ranch", 300, 4, 12, 26],
+  ["Caesar Side Salad", 220, 6, 10, 18],
+  ["Chicken Noodle Soup (bowl)", 180, 12, 20, 6],
+  ["Tomato Soup (bowl)", 200, 5, 30, 7],
+  ["Clam Chowder (bowl)", 400, 12, 30, 25],
+  ["Chili w/ Cheese (bowl)", 420, 28, 30, 22],
+  // ---- Breakfast (generic) ----
+  ["3-Egg Cheese Omelet", 450, 28, 3, 35],
+  ["Breakfast Burrito (large)", 650, 28, 60, 32],
+  ["Biscuits & Gravy (2 biscuits)", 700, 15, 60, 44],
+  ["French Toast (2 slices w/ syrup)", 550, 12, 80, 20],
+  ["Pancake (1, w/ syrup & butter)", 250, 4, 40, 8],
+  ["Waffle w/ Syrup & Butter", 500, 8, 75, 18],
+  ["Grits (1 cup w/ butter)", 220, 4, 32, 9],
+  ["Hash Browns (diner serving)", 300, 3, 35, 16],
+  ["Avocado Toast", 350, 8, 32, 22],
+  ["Bacon Egg & Cheese Bagel Sandwich", 550, 25, 50, 28],
+  ["Fruit Smoothie (16 oz)", 300, 4, 68, 2],
+  ["Protein Smoothie (16 oz)", 400, 30, 50, 8],
+  ["Acai Bowl", 500, 8, 85, 15],
+  // ---- Desserts & drinks ----
+  ["Milkshake (medium)", 600, 13, 90, 22],
+  ["Cheesecake (slice)", 500, 8, 45, 32],
+  ["Chocolate Cake (slice)", 480, 5, 62, 24],
+  ["Apple Pie (slice)", 400, 3, 58, 18],
+  ["Brownie", 250, 3, 35, 12],
+  ["Banana Pudding (cup)", 320, 5, 50, 11],
+  ["Ice Cream (1 cup)", 270, 5, 32, 14],
+  ["Cookie (1 medium)", 80, 1, 11, 4],
+  ["Donut (glazed)", 250, 3, 30, 13],
+  ["Chocolate (1 oz)", 150, 2, 17, 9],
+  ["Potato Chips (1 oz bag)", 150, 2, 15, 10],
+  ["Granola Bar", 120, 2, 20, 4],
+  ["Coffee, black", 5, 0, 0, 0],
+  ["Coffee w/ cream & sugar", 60, 1, 8, 3],
+  ["Latte, 2% milk (12 oz)", 150, 9, 14, 6],
+  ["Sweet Tea (16 oz)", 180, 0, 46, 0],
+  ["Unsweet Tea", 0, 0, 0, 0],
+  ["Lemonade (16 oz)", 200, 0, 52, 0],
+  ["Soda (12 oz can)", 140, 0, 39, 0],
+  ["Diet Soda", 0, 0, 0, 0],
+  ["Orange Juice (8 oz)", 110, 2, 26, 0],
+  ["Sports Drink (20 oz)", 130, 0, 34, 0],
+  ["Energy Drink (16 oz)", 210, 0, 54, 0],
+  ["Energy Drink, sugar-free (16 oz)", 10, 0, 2, 0],
+  ["Beer (12 oz)", 150, 1, 13, 0],
+  ["Light Beer (12 oz)", 100, 1, 6, 0],
+  ["Michelob Ultra (12 oz)", 95, 1, 3, 0],
+  ["Wine (5 oz glass)", 125, 0, 4, 0],
+  ["Liquor Shot (1.5 oz)", 100, 0, 0, 0],
+  ["Vodka Soda", 100, 0, 0, 0],
+  ["Rum & Coke", 180, 0, 20, 0],
+  ["Margarita (12 oz)", 300, 0, 36, 0],
+];
+
+const FOOD_DB = RAW_DB.map(([name, cal, p, c, f]) => ({ name, cal, p, c, f }));
+
+const todayKey = () => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `day:${y}-${m}-${day}`;
+};
+
+const prettyDate = () =>
+  new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+async function loadJSON(key, fallback) {
+  try {
+    const res = await window.storage.get(key);
+    return res ? JSON.parse(res.value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+// ---- AI estimation (photo or text) ----
+async function callModel(messageContent) {
+  const apiKey = (localStorage.getItem("anthropic-api-key") || "").trim();
+  if (!apiKey) throw new Error("no API key yet — open settings (gear icon) and paste your key");
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1000,
+      messages: [{ role: "user", content: messageContent }],
+    }),
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data || data.error) {
+    throw new Error(data && data.error && data.error.message ? data.error.message : "connection blocked");
+  }
+  const raw = Array.isArray(data.content)
+    ? data.content.filter((b) => b && b.type === "text").map((b) => b.text).join("\n")
+    : typeof data.content === "string" ? data.content : "";
+  const clean = raw.replace(/```json|```/g, "").trim();
+  const s = clean.indexOf("[");
+  const e = clean.lastIndexOf("]");
+  if (s === -1 || e <= s) throw new Error("couldn't read the estimate");
+  const items = JSON.parse(clean.slice(s, e + 1));
+  return items.map((it) => ({
+    name: String(it.name || "food item"),
+    cal: Math.round(Number(it.calories) || 0),
+    p: Math.round(Number(it.protein) || 0),
+    c: Math.round(Number(it.carbs) || 0),
+    f: Math.round(Number(it.fat) || 0),
+  }));
+}
+
+const JSON_INSTRUCTION =
+  'Respond ONLY with a JSON array, no markdown or preamble. Each element: {"name":"short food name with portion","calories":number,"protein":number,"carbs":number,"fat":number}';
+
+async function estimateFromPhoto(imageBase64, imageType) {
+  return callModel([
+    {
+      type: "image",
+      source: { type: "base64", media_type: imageType || "image/jpeg", data: imageBase64 },
+    },
+    {
+      type: "text",
+      text: "Estimate calories and macros for each distinct food item in this photo, using typical portion sizes. " + JSON_INSTRUCTION,
+    },
+  ]);
+}
+
+async function estimateFromText(query) {
+  return callModel(
+    'Estimate calories and macros for this food/meal description, using typical portion sizes: "' +
+      query +
+      '". Break into distinct items if it describes multiple foods. ' +
+      JSON_INSTRUCTION
+  );
+}
+
+function MacroBar({ label, eaten, target, primary }) {
+  const pct = Math.min(100, target > 0 ? (eaten / target) * 100 : 0);
+  const over = eaten > target;
+  return (
+    <div className="w-full min-w-0">
+      <div className="flex items-baseline justify-between mb-1">
+        <span
+          className="text-[10px] tracking-[0.14em] uppercase"
+          style={{ color: primary ? "#FF8552" : "#8C919A", fontWeight: primary ? 700 : 500 }}
+        >
+          {label}
+        </span>
+        <span className="text-[11px] tabular-nums" style={{ color: over ? "#E5484D" : "#E9EAEC" }}>
+          {eaten}
+          <span style={{ color: "#5A5F68" }}>/{target}g</span>
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#2C3037" }}>
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${pct}%`,
+            background: over ? "#E5484D" : primary ? "#FF8552" : "#6B7280",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MacroTracker() {
+  const [entries, setEntries] = useState([]);
+  const [targets, setTargets] = useState(DEFAULT_TARGETS);
+  const [input, setInput] = useState("");
+  const [error, setError] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [draftTargets, setDraftTargets] = useState(DEFAULT_TARGETS);
+  const [history, setHistory] = useState([]);
+  const [customFoods, setCustomFoods] = useState([]);
+  const [recents, setRecents] = useState([]);
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customDraft, setCustomDraft] = useState({ name: "", cal: "", p: "", c: "", f: "" });
+  const [photo, setPhoto] = useState(null); // { base64, type, preview }
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileRef = useRef(null);
+  const [dataText, setDataText] = useState("");
+  const [showData, setShowData] = useState(false);
+  const [dataMsg, setDataMsg] = useState("");
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [pasteMsg, setPasteMsg] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiResults, setAiResults] = useState(null); // null = not asked; [] = asked, in flight/empty
+  const [aiError, setAiError] = useState("");
+  const [meals, setMeals] = useState([]);
+  const [showMealSave, setShowMealSave] = useState(false);
+  const [mealName, setMealName] = useState("");
+  const [mealChecks, setMealChecks] = useState({});
+  const [weights, setWeights] = useState([]);
+  const [weightInput, setWeightInput] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editDraft, setEditDraft] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "" });
+
+  const logPastedEstimate = async () => {
+    setPasteMsg("");
+    const lines = pasteText
+      .replace(/^\s*LOG:\s*/i, "")
+      .split(/;|\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const items = [];
+    for (const line of lines) {
+      const parts = line.split("|").map((s) => s.trim());
+      if (parts.length >= 5) {
+        const [name, cal, p, c, f] = parts;
+        items.push({
+          name: name || "food item",
+          cal: Math.round(Number(cal) || 0),
+          p: Math.round(Number(p) || 0),
+          c: Math.round(Number(c) || 0),
+          f: Math.round(Number(f) || 0),
+        });
+      }
+    }
+    if (!items.length) {
+      setPasteMsg("Couldn't read that. Expected: name | calories | protein | carbs | fat — one food per line.");
+      return;
+    }
+    const stamped = items.map((it) => ({
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      name: it.name,
+      calories: it.cal,
+      protein: it.p,
+      carbs: it.c,
+      fat: it.f,
+      time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    }));
+    await saveDay([...entries, ...stamped]);
+    setPasteText("");
+    setShowPaste(false);
+    setPasteMsg("");
+  };
+
+  const exportData = async () => {
+    setDataMsg("");
+    const out = { settings: targets, customFoods, recents, meals, weights, days: {} };
+    try {
+      const res = await window.storage.list("day:");
+      const keys = (res && res.keys) || [];
+      for (const k of keys) {
+        const d = await loadJSON(k, null);
+        if (d) out.days[k] = d;
+      }
+    } catch { /* export what we have */ }
+    setDataText(JSON.stringify(out));
+    setShowData(true);
+    setDataMsg("This is your full backup. Copy it and save it anywhere (Notes, email, etc).");
+  };
+
+  const importData = async () => {
+    setDataMsg("");
+    try {
+      const obj = JSON.parse(dataText);
+      if (obj.settings) {
+        await window.storage.set("settings", JSON.stringify(obj.settings));
+        setTargets(obj.settings);
+        setDraftTargets(obj.settings);
+      }
+      if (Array.isArray(obj.customFoods)) {
+        await window.storage.set("custom-foods", JSON.stringify(obj.customFoods));
+        setCustomFoods(obj.customFoods);
+      }
+      if (Array.isArray(obj.recents)) {
+        await window.storage.set("recent-foods", JSON.stringify(obj.recents));
+        setRecents(obj.recents);
+      }
+      if (Array.isArray(obj.meals)) {
+        await window.storage.set("meals", JSON.stringify(obj.meals));
+        setMeals(obj.meals);
+      }
+      if (Array.isArray(obj.weights)) {
+        await window.storage.set("weights", JSON.stringify(obj.weights));
+        setWeights(obj.weights);
+      }
+      if (obj.days) {
+        for (const k of Object.keys(obj.days)) {
+          if (k.indexOf("day:") === 0) {
+            // eslint-disable-next-line no-await-in-loop
+            await window.storage.set(k, JSON.stringify(obj.days[k]));
+          }
+        }
+        const today = obj.days[todayKey()];
+        if (today && today.entries) setEntries(today.entries);
+      }
+      setDataMsg("Imported ✓ — your history is restored (past days appear on next load).");
+    } catch {
+      setDataMsg("Couldn't read that. Paste the exact text from Export, nothing else.");
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const t = await loadJSON("settings", DEFAULT_TARGETS);
+      if (!t.maintenance) t.maintenance = DEFAULT_TARGETS.maintenance;
+      const day = await loadJSON(todayKey(), { entries: [] });
+      const cf = await loadJSON("custom-foods", []);
+      const rc = await loadJSON("recent-foods", []);
+      const ml = await loadJSON("meals", []);
+      const wt = await loadJSON("weights", []);
+      setTargets(t);
+      setDraftTargets(t);
+      setEntries(day.entries || []);
+      setCustomFoods(Array.isArray(cf) ? cf : []);
+      setRecents(Array.isArray(rc) ? rc : []);
+      setMeals(Array.isArray(ml) ? ml : []);
+      setWeights(Array.isArray(wt) ? wt : []);
+      setLoaded(true);
+      try {
+        const res = await window.storage.list("day:");
+        if (res && res.keys) {
+          const keys = res.keys.filter((k) => k !== todayKey()).sort().slice(-30).reverse();
+          const days = [];
+          for (const k of keys) {
+            const d = await loadJSON(k, null);
+            if (d && d.entries && d.entries.length) {
+              days.push({
+                date: k.replace("day:", ""),
+                calories: d.entries.reduce((s, e) => s + e.calories, 0),
+                protein: d.entries.reduce((s, e) => s + e.protein, 0),
+              });
+            }
+          }
+          setHistory(days);
+        }
+      } catch { /* no history yet */ }
+    })();
+  }, []);
+
+  const saveDay = async (newEntries) => {
+    setEntries(newEntries);
+    try {
+      await window.storage.set(todayKey(), JSON.stringify({ entries: newEntries }));
+    } catch {
+      setError("Couldn't save that entry. Try again.");
+    }
+  };
+
+  const logFood = async (food, mult) => {
+    setError("");
+    const m = mult || 1;
+    const entry = {
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      name: m === 1 ? food.name : food.name + " ×" + m,
+      calories: Math.round(food.cal * m),
+      protein: Math.round(food.p * m),
+      carbs: Math.round(food.c * m),
+      fat: Math.round(food.f * m),
+      time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    };
+    await saveDay([...entries, entry]);
+    setInput("");
+    const newRecents = [food, ...recents.filter((r) => r.name !== food.name)].slice(0, 8);
+    setRecents(newRecents);
+    try {
+      await window.storage.set("recent-foods", JSON.stringify(newRecents));
+    } catch { /* recents are nice-to-have */ }
+  };
+
+  const removeEntry = async (id) => {
+    await saveDay(entries.filter((e) => e.id !== id));
+  };
+
+  // ---- AI search ----
+  const runAiSearch = async () => {
+    setAiBusy(true);
+    setAiError("");
+    setAiResults([]);
+    try {
+      const items = await estimateFromText(input.trim());
+      if (!items.length) throw new Error("no foods recognized");
+      setAiResults(items);
+    } catch (err) {
+      setAiError("AI estimate failed (" + (err && err.message ? err.message : "unknown") + ").");
+      setAiResults(null);
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const logAiResult = async (fd, mult) => {
+    // Save AI estimates as custom foods so they're searchable and reusable later
+    const updated = [fd, ...customFoods.filter((x) => x.name !== fd.name)];
+    setCustomFoods(updated);
+    try {
+      await window.storage.set("custom-foods", JSON.stringify(updated));
+    } catch { /* still log it */ }
+    await logFood(fd, mult);
+    setAiResults(null);
+  };
+
+  // ---- Saved meals ----
+  const openMealSave = () => {
+    const checks = {};
+    entries.forEach((e) => { checks[e.id] = true; });
+    setMealChecks(checks);
+    setMealName("");
+    setShowMealSave(true);
+  };
+
+  const saveMeal = async () => {
+    const items = entries
+      .filter((e) => mealChecks[e.id])
+      .map((e) => ({ name: e.name, cal: e.calories, p: e.protein, c: e.carbs, f: e.fat }));
+    if (!items.length) { setShowMealSave(false); return; }
+    const meal = { name: mealName.trim() || "Meal " + (meals.length + 1), items };
+    const updated = [meal, ...meals.filter((m) => m.name !== meal.name)].slice(0, 20);
+    setMeals(updated);
+    setShowMealSave(false);
+    try {
+      await window.storage.set("meals", JSON.stringify(updated));
+    } catch { /* non-critical */ }
+  };
+
+  const logMeal = async (meal) => {
+    const stamped = meal.items.map((it) => ({
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      name: it.name,
+      calories: it.cal,
+      protein: it.p,
+      carbs: it.c,
+      fat: it.f,
+      time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+    }));
+    await saveDay([...entries, ...stamped]);
+  };
+
+  const deleteMeal = async (name) => {
+    const updated = meals.filter((m) => m.name !== name);
+    setMeals(updated);
+    try {
+      await window.storage.set("meals", JSON.stringify(updated));
+    } catch { /* non-critical */ }
+  };
+
+  // ---- Weight logging ----
+  const logWeight = async () => {
+    const lbs = Number(weightInput);
+    if (!lbs || lbs <= 0) return;
+    const today = todayKey().replace("day:", "");
+    const updated = [...weights.filter((w) => w.date !== today), { date: today, lbs }]
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+    setWeights(updated);
+    setWeightInput("");
+    try {
+      await window.storage.set("weights", JSON.stringify(updated));
+    } catch { /* non-critical */ }
+  };
+
+  // ---- Edit logged entries ----
+  const startEdit = (e) => {
+    setEditId(e.id);
+    setEditDraft({ name: e.name, calories: e.calories, protein: e.protein, carbs: e.carbs, fat: e.fat });
+  };
+
+  const saveEdit = async () => {
+    const upd = entries.map((e) =>
+      e.id === editId
+        ? {
+            ...e,
+            name: (editDraft.name || "").trim() || e.name,
+            calories: Math.max(0, Math.round(Number(editDraft.calories) || 0)),
+            protein: Math.max(0, Math.round(Number(editDraft.protein) || 0)),
+            carbs: Math.max(0, Math.round(Number(editDraft.carbs) || 0)),
+            fat: Math.max(0, Math.round(Number(editDraft.fat) || 0)),
+          }
+        : e
+    );
+    await saveDay(upd);
+    setEditId(null);
+  };
+
+  const handlePhotoPick = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setPhotoError("");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = String(reader.result);
+      setPhoto({ base64: dataUrl.split(",")[1], type: file.type || "image/jpeg", preview: dataUrl });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const analyzePhoto = async () => {
+    if (!photo) return;
+    setPhotoBusy(true);
+    setPhotoError("");
+    try {
+      const items = await estimateFromPhoto(photo.base64, photo.type);
+      if (!items.length) throw new Error("no food recognized");
+      const stamped = items.map((it) => ({
+        id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+        name: it.name,
+        calories: it.cal,
+        protein: it.p,
+        carbs: it.c,
+        fat: it.f,
+        time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+      }));
+      await saveDay([...entries, ...stamped]);
+      setPhoto(null);
+    } catch (err) {
+      setPhotoError(
+        "Couldn't analyze the photo (" + (err && err.message ? err.message : "unknown error") + "). You can also paste an estimate below."
+      );
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const saveCustomFood = async () => {
+    const food = {
+      name: customDraft.name.trim() || "Custom food",
+      cal: Math.max(0, Number(customDraft.cal) || 0),
+      p: Math.max(0, Number(customDraft.p) || 0),
+      c: Math.max(0, Number(customDraft.c) || 0),
+      f: Math.max(0, Number(customDraft.f) || 0),
+    };
+    const updated = [food, ...customFoods.filter((x) => x.name !== food.name)];
+    setCustomFoods(updated);
+    setShowCustomForm(false);
+    setCustomDraft({ name: "", cal: "", p: "", c: "", f: "" });
+    try {
+      await window.storage.set("custom-foods", JSON.stringify(updated));
+    } catch { /* still log it */ }
+    await logFood(food, 1);
+  };
+
+  const saveTargets = async () => {
+    const t = {
+      calories: Math.max(0, Number(draftTargets.calories) || 0),
+      protein: Math.max(0, Number(draftTargets.protein) || 0),
+      carbs: Math.max(0, Number(draftTargets.carbs) || 0),
+      fat: Math.max(0, Number(draftTargets.fat) || 0),
+      maintenance: Math.max(0, Number(draftTargets.maintenance) || DEFAULT_TARGETS.maintenance),
+    };
+    setTargets(t);
+    setShowSettings(false);
+    try {
+      await window.storage.set("settings", JSON.stringify(t));
+    } catch {
+      setError("Couldn't save targets.");
+    }
+  };
+
+  // Multi-word search: every word must appear somewhere in the food name
+  const q = input.trim().toLowerCase();
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const matches = tokens.length
+    ? [...customFoods, ...FOOD_DB]
+        .filter((fd) => {
+          const n = fd.name.toLowerCase();
+          return tokens.every((t) => n.includes(t));
+        })
+        .slice(0, 8)
+    : [];
+
+  const totals = entries.reduce(
+    (s, e) => ({
+      calories: s.calories + e.calories,
+      protein: s.protein + e.protein,
+      carbs: s.carbs + e.carbs,
+      fat: s.fat + e.fat,
+    }),
+    { calories: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+  const remaining = targets.calories - totals.calories;
+
+  // ---- Weekly / monthly summaries (logged days only, incl. today) ----
+  const maintenance = targets.maintenance || DEFAULT_TARGETS.maintenance;
+  const allDays = [
+    ...(entries.length ? [{ date: todayKey().replace("day:", ""), calories: totals.calories, protein: totals.protein }] : []),
+    ...history,
+  ];
+  const summarize = (nDays) => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (nDays - 1));
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    const days = allDays.filter((d) => d.date >= cutoffStr);
+    if (!days.length) return null;
+    const cal = days.reduce((s, d) => s + d.calories, 0);
+    const pro = days.reduce((s, d) => s + d.protein, 0);
+    const deficit = days.reduce((s, d) => s + (maintenance - d.calories), 0);
+    return {
+      n: days.length,
+      avgCal: Math.round(cal / days.length),
+      avgPro: Math.round(pro / days.length),
+      deficit: Math.round(deficit),
+      lbs: deficit / 3500,
+    };
+  };
+  const week = summarize(7);
+  const month = summarize(30);
+
+  // ---- Weight trend (rolling averages smooth out water weight) ----
+  const daysAgoStr = (n) => {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  };
+  const avgWeight = (fromStr, toStr) => {
+    const xs = weights.filter((w) => w.date >= fromStr && w.date <= toStr).map((w) => w.lbs);
+    return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+  };
+  const latestW = weights.length ? weights[weights.length - 1] : null;
+  const wNow = avgWeight(daysAgoStr(6), daysAgoStr(0));
+  const wPrev = avgWeight(daysAgoStr(13), daysAgoStr(7));
+  const actualRate = wNow != null && wPrev != null ? wPrev - wNow : null; // + = losing
+  const predictedRate = week ? ((week.deficit / week.n) * 7) / 3500 : null;
+  const wMonthAgo = avgWeight(daysAgoStr(33), daysAgoStr(27));
+  const change30 = latestW && wMonthAgo != null ? wMonthAgo - latestW.lbs : null;
+  let maintenanceHint = "";
+  if (actualRate != null && predictedRate != null && weights.length >= 4) {
+    const gap = predictedRate - actualRate;
+    if (gap > 0.5) maintenanceHint = "Losing slower than the math predicts — your true maintenance is likely lower. Try reducing it by ~250 in settings.";
+    else if (gap < -0.5) maintenanceHint = "Losing faster than predicted — your maintenance may be set too low. Consider raising it by ~250 in settings.";
+  }
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#15171B" }}>
+        <div className="text-sm" style={{ color: "#8C919A" }}>Loading…</div>
+      </div>
+    );
+  }
+
+  const inputStyle = { background: "#15171B", border: "1px solid #2C3037", color: "#E9EAEC" };
+
+  return (
+    <div className="min-h-screen w-full overflow-x-hidden" style={{ background: "#15171B", color: "#E9EAEC", maxWidth: "100vw" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Inter:wght@400;500;600&display=swap');
+        .display { font-family: 'Oswald', 'Arial Narrow', system-ui, sans-serif; }
+        .body-face { font-family: 'Inter', system-ui, sans-serif; }
+        input::placeholder { color: #5A5F68; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+      `}</style>
+
+      <div className="body-face max-w-md mx-auto px-4 pb-24 pt-5">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <div className="display text-sm tracking-[0.22em] uppercase" style={{ color: "#FF8552" }}>
+              The Cut
+            </div>
+            <div className="text-xs mt-0.5" style={{ color: "#8C919A" }}>{prettyDate()}</div>
+          </div>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            aria-label="Edit daily targets"
+            className="p-2 rounded-lg focus:outline-none focus-visible:ring-2"
+            style={{ background: "#1E2127", border: "1px solid #2C3037" }}
+          >
+            <Settings className="w-4 h-4" style={{ color: "#8C919A" }} />
+          </button>
+        </div>
+
+        {/* Settings */}
+        {showSettings && (
+          <div className="mb-6 p-4 rounded-xl" style={{ background: "#1E2127", border: "1px solid #2C3037" }}>
+            <div className="display text-xs tracking-[0.18em] uppercase mb-3" style={{ color: "#8C919A" }}>
+              Daily targets
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {[["calories", "Calories"], ["protein", "Protein (g)"], ["carbs", "Carbs (g)"], ["fat", "Fat (g)"], ["maintenance", "Maintenance cals (for deficit)"]].map(([k, label]) => (
+                <label key={k} className="block">
+                  <span className="text-[11px]" style={{ color: "#8C919A" }}>{label}</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={draftTargets[k]}
+                    onChange={(e) => setDraftTargets({ ...draftTargets, [k]: e.target.value })}
+                    className="mt-1 w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus-visible:ring-2"
+                    style={inputStyle}
+                  />
+                </label>
+              ))}
+            </div>
+            <button
+              onClick={saveTargets}
+              className="mt-3 w-full py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2"
+              style={{ background: "#FF8552", color: "#15171B" }}
+            >
+              <Check className="w-4 h-4" /> Save targets
+            </button>
+
+            {/* Photo analysis key */}
+            <div className="mt-4 pt-3" style={{ borderTop: "1px solid #2C3037" }}>
+              <div className="display text-xs tracking-[0.18em] uppercase mb-2" style={{ color: "#8C919A" }}>
+                AI features — API key
+              </div>
+              <input
+                type="password"
+                defaultValue={localStorage.getItem("anthropic-api-key") || ""}
+                onChange={(e) => localStorage.setItem("anthropic-api-key", e.target.value.trim())}
+                placeholder="sk-ant-…"
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none focus-visible:ring-2"
+                style={inputStyle}
+              />
+              <div className="mt-1.5 text-[10px]" style={{ color: "#5A5F68" }}>
+                Enables the camera and AI search. Stored only on this device. Get a key at console.anthropic.com.
+              </div>
+            </div>
+
+            {/* Backup & move */}
+            <div className="mt-4 pt-3" style={{ borderTop: "1px solid #2C3037" }}>
+              <div className="display text-xs tracking-[0.18em] uppercase mb-2" style={{ color: "#8C919A" }}>
+                Backup & move
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={exportData}
+                  className="flex-1 py-2 rounded-lg text-xs focus:outline-none focus-visible:ring-2"
+                  style={{ border: "1px solid #2C3037", color: "#E9EAEC" }}
+                >
+                  Export data
+                </button>
+                <button
+                  onClick={() => { setShowData(true); setDataText(""); setDataMsg("Paste your exported backup below, then tap Import."); }}
+                  className="flex-1 py-2 rounded-lg text-xs focus:outline-none focus-visible:ring-2"
+                  style={{ border: "1px solid #2C3037", color: "#E9EAEC" }}
+                >
+                  Import data
+                </button>
+              </div>
+              {showData && (
+                <div className="mt-2">
+                  <textarea
+                    value={dataText}
+                    onChange={(e) => setDataText(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 rounded-lg text-[11px] focus:outline-none focus-visible:ring-2"
+                    style={{ background: "#15171B", border: "1px solid #2C3037", color: "#E9EAEC", fontFamily: "monospace" }}
+                  />
+                  <div className="flex gap-2 mt-1.5">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(dataText);
+                          setDataMsg("Copied to clipboard ✓");
+                        } catch {
+                          setDataMsg("Couldn't auto-copy — select the text and copy it manually.");
+                        }
+                      }}
+                      className="flex-1 py-1.5 rounded-lg text-xs focus:outline-none focus-visible:ring-2"
+                      style={{ border: "1px solid #2C3037", color: "#8C919A" }}
+                    >
+                      Copy
+                    </button>
+                    <button
+                      onClick={importData}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                      style={{ background: "#FF8552", color: "#15171B" }}
+                    >
+                      Import
+                    </button>
+                  </div>
+                </div>
+              )}
+              {dataMsg && <div className="mt-2 text-[11px]" style={{ color: "#8C919A" }}>{dataMsg}</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Hero: remaining */}
+        <div className="mb-2">
+          <div
+            className="display tabular-nums leading-none"
+            style={{ fontSize: "clamp(48px, 16vw, 72px)", fontWeight: 600, color: remaining < 0 ? "#E5484D" : "#E9EAEC" }}
+          >
+            {Math.abs(remaining).toLocaleString()}
+          </div>
+          <div className="text-xs tracking-[0.14em] uppercase mt-1" style={{ color: "#8C919A" }}>
+            {remaining >= 0 ? "calories left today" : "calories over target"}
+            <span style={{ color: "#5A5F68" }}> · {totals.calories.toLocaleString()} / {targets.calories.toLocaleString()} eaten</span>
+          </div>
+        </div>
+
+        {/* Macro bars */}
+        <div className="flex flex-col gap-3 mt-5 mb-7 w-full">
+          <MacroBar label="Protein" eaten={totals.protein} target={targets.protein} primary />
+          <MacroBar label="Carbs" eaten={totals.carbs} target={targets.carbs} />
+          <MacroBar label="Fat" eaten={totals.fat} target={targets.fat} />
+        </div>
+
+        {/* Search & log */}
+        <div className="p-3 rounded-xl mb-6" style={{ background: "#1E2127", border: "1px solid #2C3037" }}>
+          <div className="flex gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#5A5F68" }} />
+              <input
+                value={input}
+                onChange={(e) => { setInput(e.target.value); setError(""); setShowCustomForm(false); setAiResults(null); setAiError(""); }}
+                placeholder='Try "big mac", "pad thai"…'
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg text-sm focus:outline-none focus-visible:ring-2"
+                style={inputStyle}
+              />
+            </div>
+            <button
+              onClick={() => fileRef.current && fileRef.current.click()}
+              aria-label="Snap or upload a photo of your meal"
+              className="px-3 rounded-lg focus:outline-none focus-visible:ring-2"
+              style={{ background: "#15171B", border: "1px solid #2C3037" }}
+            >
+              <Camera className="w-4 h-4" style={{ color: "#8C919A" }} />
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoPick} className="hidden" />
+          </div>
+
+          {/* Photo preview & analyze */}
+          {photo && (
+            <div className="mt-3 p-2.5 rounded-lg flex items-center gap-3" style={{ background: "#15171B", border: "1px solid #2C3037" }}>
+              <img src={photo.preview} alt="Meal to analyze" className="h-14 w-14 object-cover rounded-md flex-shrink-0" />
+              <button
+                onClick={analyzePhoto}
+                disabled={photoBusy}
+                className="flex-1 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 focus:outline-none focus-visible:ring-2 disabled:opacity-50"
+                style={{ background: "#FF8552", color: "#15171B" }}
+              >
+                {photoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                {photoBusy ? "Analyzing…" : "Estimate & log"}
+              </button>
+              <button onClick={() => { setPhoto(null); setPhotoError(""); }} aria-label="Remove photo"
+                className="p-1.5 focus:outline-none focus-visible:ring-2">
+                <X className="w-4 h-4" style={{ color: "#5A5F68" }} />
+              </button>
+            </div>
+          )}
+          {photoError && <div className="mt-2 text-xs" style={{ color: "#E5484D" }}>{photoError}</div>}
+
+          {/* Paste estimate from chat */}
+          {!showPaste ? (
+            <button
+              onClick={() => { setShowPaste(true); setPasteMsg(""); }}
+              className="mt-3 w-full py-2 rounded-lg text-xs flex items-center justify-center gap-1 focus:outline-none focus-visible:ring-2"
+              style={{ border: "1px dashed #2C3037", color: "#8C919A" }}
+            >
+              <Plus className="w-3.5 h-3.5" /> Paste a photo estimate from chat
+            </button>
+          ) : (
+            <div className="mt-3 p-3 rounded-lg" style={{ background: "#15171B", border: "1px solid #2C3037" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] tracking-[0.14em] uppercase" style={{ color: "#8C919A" }}>Paste estimate</span>
+                <button onClick={() => setShowPaste(false)} aria-label="Close paste panel">
+                  <X className="w-4 h-4" style={{ color: "#5A5F68" }} />
+                </button>
+              </div>
+              <textarea
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+                rows={3}
+                placeholder={"Steak (6 oz) | 420 | 40 | 0 | 28\nMac & cheese | 470 | 17 | 45 | 25"}
+                className="w-full px-3 py-2 rounded-lg text-[12px] focus:outline-none focus-visible:ring-2"
+                style={{ background: "#1E2127", border: "1px solid #2C3037", color: "#E9EAEC", fontFamily: "monospace" }}
+              />
+              <button
+                onClick={logPastedEstimate}
+                className="mt-2 w-full py-2 rounded-lg text-sm font-semibold focus:outline-none focus-visible:ring-2"
+                style={{ background: "#FF8552", color: "#15171B" }}
+              >
+                Log all items
+              </button>
+              <div className="mt-2 text-[10px]" style={{ color: "#5A5F68" }}>
+                Send a food photo to me in chat and ask for "the LOG line" — copy my reply, paste it here, done.
+              </div>
+              {pasteMsg && <div className="mt-1.5 text-[11px]" style={{ color: "#E5484D" }}>{pasteMsg}</div>}
+            </div>
+          )}
+
+          {/* Saved meals & recents (when not searching) */}
+          {!q && meals.length > 0 && !showCustomForm && (
+            <div className="mt-3">
+              <div className="text-[10px] tracking-[0.14em] uppercase mb-1.5" style={{ color: "#5A5F68" }}>
+                Meals — tap to log all items
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {meals.map((m) => (
+                  <span key={m.name} className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1.5 rounded-full text-xs"
+                    style={{ background: "#15171B", border: "1px solid #FF8552", color: "#E9EAEC" }}>
+                    <button onClick={() => logMeal(m)} className="focus:outline-none">
+                      {m.name} <span style={{ color: "#8C919A" }}>({m.items.reduce((s, i) => s + i.cal, 0)} cal)</span>
+                    </button>
+                    <button onClick={() => deleteMeal(m.name)} aria-label={"Delete meal " + m.name} className="focus:outline-none">
+                      <X className="w-3 h-3" style={{ color: "#5A5F68" }} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recents (when not searching) */}
+          {!q && recents.length > 0 && !showCustomForm && (
+            <div className="mt-3">
+              <div className="text-[10px] tracking-[0.14em] uppercase mb-1.5" style={{ color: "#5A5F68" }}>
+                Recent — tap to log
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {recents.map((r) => (
+                  <button
+                    key={r.name}
+                    onClick={() => logFood(r, 1)}
+                    className="px-2.5 py-1.5 rounded-full text-xs focus:outline-none focus-visible:ring-2"
+                    style={{ background: "#15171B", border: "1px solid #2C3037", color: "#E9EAEC" }}
+                  >
+                    {r.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Matches */}
+          {q && matches.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {matches.map((fd) => (
+                <div key={fd.name} className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ background: "#15171B" }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium leading-tight">{fd.name}</div>
+                    <div className="text-[11px] tabular-nums" style={{ color: "#8C919A" }}>
+                      {fd.cal} cal · <span style={{ color: "#FF8552" }}>{fd.p}p</span> · {fd.c}c · {fd.f}f
+                    </div>
+                  </div>
+                  <button onClick={() => logFood(fd, 0.5)} aria-label={"Log half serving of " + fd.name}
+                    className="px-2 py-1.5 rounded-md text-xs focus:outline-none focus-visible:ring-2"
+                    style={{ border: "1px solid #2C3037", color: "#8C919A" }}>½</button>
+                  <button onClick={() => logFood(fd, 1)} aria-label={"Log one serving of " + fd.name}
+                    className="px-2.5 py-1.5 rounded-md text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                    style={{ background: "#FF8552", color: "#15171B" }}>Add</button>
+                  <button onClick={() => logFood(fd, 2)} aria-label={"Log two servings of " + fd.name}
+                    className="px-2 py-1.5 rounded-md text-xs focus:outline-none focus-visible:ring-2"
+                    style={{ border: "1px solid #2C3037", color: "#8C919A" }}>2×</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {q && matches.length === 0 && !showCustomForm && aiResults === null && !aiBusy && (
+            <div className="mt-3 text-xs" style={{ color: "#8C919A" }}>
+              Not in the database — use the AI estimate below, or add it as a custom food.
+            </div>
+          )}
+
+          {/* AI estimate */}
+          {q && q.length > 2 && !aiBusy && aiResults === null && (
+            <button
+              onClick={runAiSearch}
+              className="mt-2 w-full py-2 rounded-lg text-xs font-semibold focus:outline-none focus-visible:ring-2"
+              style={{ background: "#2C3037", color: "#FF8552", border: "1px solid #FF8552" }}
+            >
+              ✦ Estimate "{input.trim()}" with AI
+            </button>
+          )}
+          {aiBusy && (
+            <div className="mt-2 flex items-center justify-center gap-2 py-2 text-xs" style={{ color: "#8C919A" }}>
+              <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#FF8552" }} /> Estimating…
+            </div>
+          )}
+          {aiResults && aiResults.length > 0 && (
+            <div className="mt-2 space-y-1">
+              <div className="text-[10px] tracking-[0.14em] uppercase" style={{ color: "#FF8552" }}>
+                AI estimate — saved for reuse when logged
+              </div>
+              {aiResults.map((fd) => (
+                <div key={fd.name} className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ background: "#15171B", border: "1px solid #FF8552" }}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-medium leading-tight">{fd.name}</div>
+                    <div className="text-[11px] tabular-nums" style={{ color: "#8C919A" }}>
+                      {fd.cal} cal · <span style={{ color: "#FF8552" }}>{fd.p}p</span> · {fd.c}c · {fd.f}f
+                    </div>
+                  </div>
+                  <button onClick={() => logAiResult(fd, 0.5)} aria-label={"Log half serving of " + fd.name}
+                    className="px-2 py-1.5 rounded-md text-xs focus:outline-none focus-visible:ring-2"
+                    style={{ border: "1px solid #2C3037", color: "#8C919A" }}>½</button>
+                  <button onClick={() => logAiResult(fd, 1)} aria-label={"Log one serving of " + fd.name}
+                    className="px-2.5 py-1.5 rounded-md text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                    style={{ background: "#FF8552", color: "#15171B" }}>Add</button>
+                  <button onClick={() => logAiResult(fd, 2)} aria-label={"Log two servings of " + fd.name}
+                    className="px-2 py-1.5 rounded-md text-xs focus:outline-none focus-visible:ring-2"
+                    style={{ border: "1px solid #2C3037", color: "#8C919A" }}>2×</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {aiError && <div className="mt-2 text-xs" style={{ color: "#E5484D" }}>{aiError}</div>}
+
+          {/* Custom food */}
+          {!showCustomForm ? (
+            <button
+              onClick={() => { setShowCustomForm(true); setCustomDraft({ ...customDraft, name: input.trim() }); }}
+              className="mt-3 w-full py-2 rounded-lg text-xs flex items-center justify-center gap-1 focus:outline-none focus-visible:ring-2"
+              style={{ border: "1px dashed #2C3037", color: "#8C919A" }}
+            >
+              <Plus className="w-3.5 h-3.5" /> Add a custom food
+            </button>
+          ) : (
+            <div className="mt-3 p-3 rounded-lg" style={{ background: "#15171B", border: "1px solid #2C3037" }}>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] tracking-[0.14em] uppercase" style={{ color: "#8C919A" }}>New custom food</span>
+                <button onClick={() => setShowCustomForm(false)} aria-label="Close custom food form">
+                  <X className="w-4 h-4" style={{ color: "#5A5F68" }} />
+                </button>
+              </div>
+              <input
+                value={customDraft.name}
+                onChange={(e) => setCustomDraft({ ...customDraft, name: e.target.value })}
+                placeholder="Name (e.g. Mom's lasagna, 1 slice)"
+                className="w-full px-3 py-2 rounded-lg text-sm mb-2 focus:outline-none focus-visible:ring-2"
+                style={{ background: "#1E2127", border: "1px solid #2C3037", color: "#E9EAEC" }}
+              />
+              <div className="grid grid-cols-4 gap-2">
+                {[["cal", "Cal"], ["p", "Prot"], ["c", "Carb"], ["f", "Fat"]].map(([k, label]) => (
+                  <label key={k} className="block">
+                    <span className="text-[10px]" style={{ color: "#8C919A" }}>{label}</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={customDraft[k]}
+                      onChange={(e) => setCustomDraft({ ...customDraft, [k]: e.target.value })}
+                      className="mt-0.5 w-full px-2 py-1.5 rounded-lg text-sm focus:outline-none focus-visible:ring-2"
+                      style={{ background: "#1E2127", border: "1px solid #2C3037", color: "#E9EAEC" }}
+                    />
+                  </label>
+                ))}
+              </div>
+              <button
+                onClick={saveCustomFood}
+                className="mt-2.5 w-full py-2 rounded-lg text-sm font-semibold focus:outline-none focus-visible:ring-2"
+                style={{ background: "#FF8552", color: "#15171B" }}
+              >
+                Save & log it
+              </button>
+              <div className="mt-2 text-[10px]" style={{ color: "#5A5F68" }}>
+                Don't know the macros? Ask me in the chat — I'll estimate them for you.
+              </div>
+            </div>
+          )}
+
+          {error && <div className="mt-2 text-xs" style={{ color: "#E5484D" }}>{error}</div>}
+        </div>
+
+        {/* Weight */}
+        <div className="mb-6 p-3 rounded-xl" style={{ background: "#1E2127", border: "1px solid #2C3037" }}>
+          <div className="flex items-baseline justify-between mb-2">
+            <div className="display text-xs tracking-[0.18em] uppercase" style={{ color: "#8C919A" }}>Weight</div>
+            {latestW && (
+              <div className="tabular-nums text-sm">
+                {latestW.lbs} lb <span className="text-[11px]" style={{ color: "#5A5F68" }}>· {latestW.date.slice(5)}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              value={weightInput}
+              onChange={(e) => setWeightInput(e.target.value)}
+              placeholder="Today's weight (lb)"
+              className="flex-1 min-w-0 px-3 py-2 rounded-lg text-sm focus:outline-none focus-visible:ring-2"
+              style={inputStyle}
+            />
+            <button
+              onClick={logWeight}
+              className="px-4 rounded-lg text-sm font-semibold focus:outline-none focus-visible:ring-2"
+              style={{ background: "#FF8552", color: "#15171B" }}
+            >
+              Log
+            </button>
+          </div>
+          {(actualRate != null || change30 != null) && (
+            <div className="mt-2 text-[12px] tabular-nums" style={{ color: "#E9EAEC" }}>
+              {actualRate != null && (
+                <span style={{ color: actualRate >= 0 ? "#4CC38A" : "#E5484D" }}>
+                  Actual: {actualRate >= 0 ? "−" : "+"}{Math.abs(actualRate).toFixed(1)} lb/wk
+                </span>
+              )}
+              {actualRate != null && predictedRate != null && (
+                <span style={{ color: "#8C919A" }}> · Predicted: {predictedRate >= 0 ? "−" : "+"}{Math.abs(predictedRate).toFixed(1)} lb/wk</span>
+              )}
+              {change30 != null && (
+                <span style={{ color: "#8C919A" }}> · 30-day: {change30 >= 0 ? "−" : "+"}{Math.abs(change30).toFixed(1)} lb</span>
+              )}
+            </div>
+          )}
+          {maintenanceHint && (
+            <div className="mt-1.5 text-[11px]" style={{ color: "#FFB224" }}>{maintenanceHint}</div>
+          )}
+          {weights.length > 0 && weights.length < 4 && (
+            <div className="mt-1.5 text-[11px]" style={{ color: "#5A5F68" }}>
+              Weigh in a few times a week (same time of day) — trends appear after ~2 weeks of data.
+            </div>
+          )}
+        </div>
+
+        {/* Trends */}
+        {(week || month) && (
+          <div className="mb-6">
+            <div className="display text-xs tracking-[0.18em] uppercase mb-2" style={{ color: "#8C919A" }}>
+              Trends <span style={{ color: "#5A5F68", textTransform: "none", letterSpacing: 0 }}>· deficit vs {maintenance.toLocaleString()} maintenance</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[["7 days", week], ["30 days", month]].map(([label, s]) => s && (
+                <div key={label} className="p-3 rounded-xl" style={{ background: "#1E2127", border: "1px solid #2C3037" }}>
+                  <div className="text-[10px] tracking-[0.14em] uppercase mb-1.5" style={{ color: "#FF8552" }}>
+                    {label} <span style={{ color: "#5A5F68" }}>({s.n} logged)</span>
+                  </div>
+                  <div className="text-[12px] tabular-nums space-y-0.5">
+                    <div>{s.avgCal.toLocaleString()} <span style={{ color: "#8C919A" }}>avg cal</span></div>
+                    <div><span style={{ color: "#FF8552" }}>{s.avgPro}g</span> <span style={{ color: "#8C919A" }}>avg protein</span></div>
+                    <div style={{ color: s.deficit >= 0 ? "#4CC38A" : "#E5484D" }}>
+                      {s.deficit >= 0 ? "−" : "+"}{Math.abs(s.deficit).toLocaleString()} <span style={{ color: "#8C919A" }}>total cal</span>
+                    </div>
+                    <div style={{ color: s.deficit >= 0 ? "#4CC38A" : "#E5484D" }}>
+                      ≈ {Math.abs(s.lbs).toFixed(1)} lb {s.deficit >= 0 ? "lost" : "gained"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Today's entries */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="display text-xs tracking-[0.18em] uppercase" style={{ color: "#8C919A" }}>
+            Today's log
+          </div>
+          {entries.length > 0 && !showMealSave && (
+            <button
+              onClick={openMealSave}
+              className="px-2.5 py-1 rounded-lg text-[11px] focus:outline-none focus-visible:ring-2"
+              style={{ border: "1px solid #2C3037", color: "#FF8552" }}
+            >
+              Save as meal
+            </button>
+          )}
+        </div>
+
+        {/* Save-as-meal panel */}
+        {showMealSave && (
+          <div className="mb-3 p-3 rounded-xl" style={{ background: "#1E2127", border: "1px solid #2C3037" }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] tracking-[0.14em] uppercase" style={{ color: "#8C919A" }}>Save as meal — pick the items</span>
+              <button onClick={() => setShowMealSave(false)} aria-label="Close save meal panel">
+                <X className="w-4 h-4" style={{ color: "#5A5F68" }} />
+              </button>
+            </div>
+            <input
+              value={mealName}
+              onChange={(e) => setMealName(e.target.value)}
+              placeholder='Meal name (e.g. "My breakfast")'
+              className="w-full px-3 py-2 rounded-lg text-sm mb-2 focus:outline-none focus-visible:ring-2"
+              style={inputStyle}
+            />
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {entries.map((e) => (
+                <label key={e.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[13px]" style={{ background: "#15171B" }}>
+                  <input
+                    type="checkbox"
+                    checked={!!mealChecks[e.id]}
+                    onChange={(ev) => setMealChecks({ ...mealChecks, [e.id]: ev.target.checked })}
+                  />
+                  <span className="flex-1 min-w-0 truncate">{e.name}</span>
+                  <span className="tabular-nums text-[11px]" style={{ color: "#8C919A" }}>{e.calories} cal</span>
+                </label>
+              ))}
+            </div>
+            <button
+              onClick={saveMeal}
+              className="mt-2 w-full py-2 rounded-lg text-sm font-semibold focus:outline-none focus-visible:ring-2"
+              style={{ background: "#FF8552", color: "#15171B" }}
+            >
+              Save meal
+            </button>
+          </div>
+        )}
+        {entries.length === 0 ? (
+          <div className="py-8 px-3 text-center text-sm rounded-xl" style={{ color: "#5A5F68", border: "1px dashed #2C3037" }}>
+            Nothing logged yet. Search a food above to get started.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {entries.map((e) => (
+              editId === e.id ? (
+                <div key={e.id} className="px-3 py-2.5 rounded-xl" style={{ background: "#1E2127", border: "1px solid #FF8552" }}>
+                  <input
+                    value={editDraft.name}
+                    onChange={(ev) => setEditDraft({ ...editDraft, name: ev.target.value })}
+                    className="w-full px-3 py-2 rounded-lg text-sm mb-2 focus:outline-none focus-visible:ring-2"
+                    style={inputStyle}
+                  />
+                  <div className="grid grid-cols-4 gap-2">
+                    {[["calories", "Cal"], ["protein", "Prot"], ["carbs", "Carb"], ["fat", "Fat"]].map(([k, label]) => (
+                      <label key={k} className="block">
+                        <span className="text-[10px]" style={{ color: "#8C919A" }}>{label}</span>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          value={editDraft[k]}
+                          onChange={(ev) => setEditDraft({ ...editDraft, [k]: ev.target.value })}
+                          className="mt-0.5 w-full px-2 py-1.5 rounded-lg text-sm focus:outline-none focus-visible:ring-2"
+                          style={inputStyle}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => setEditId(null)}
+                      className="flex-1 py-2 rounded-lg text-xs focus:outline-none focus-visible:ring-2"
+                      style={{ border: "1px solid #2C3037", color: "#8C919A" }}>Cancel</button>
+                    <button onClick={saveEdit}
+                      className="flex-1 py-2 rounded-lg text-xs font-semibold focus:outline-none focus-visible:ring-2"
+                      style={{ background: "#FF8552", color: "#15171B" }}>Save changes</button>
+                  </div>
+                </div>
+              ) : (
+              <div key={e.id} className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "#1E2127", border: "1px solid #2C3037" }}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">{e.name}</div>
+                  <div className="text-[11px] tabular-nums" style={{ color: "#8C919A" }}>
+                    {e.calories} cal · <span style={{ color: "#FF8552" }}>{e.protein}p</span> · {e.carbs}c · {e.fat}f
+                    <span style={{ color: "#5A5F68" }}> · {e.time}</span>
+                  </div>
+                </div>
+                <button onClick={() => startEdit(e)} aria-label={"Edit " + e.name}
+                  className="p-1.5 rounded-lg focus:outline-none focus-visible:ring-2">
+                  <Pencil className="w-4 h-4" style={{ color: "#5A5F68" }} />
+                </button>
+                <button onClick={() => removeEntry(e.id)} aria-label={"Delete " + e.name}
+                  className="p-1.5 rounded-lg focus:outline-none focus-visible:ring-2">
+                  <Trash2 className="w-4 h-4" style={{ color: "#5A5F68" }} />
+                </button>
+              </div>
+              )
+            ))}
+          </div>
+        )}
+
+        {/* History */}
+        {history.length > 0 && (
+          <div className="mt-8">
+            <div className="display text-xs tracking-[0.18em] uppercase mb-2" style={{ color: "#8C919A" }}>
+              Last days
+            </div>
+            <div className="space-y-1.5">
+              {history.slice(0, 7).map((d) => (
+                <div key={d.date} className="flex items-center justify-between text-xs px-3 py-2 rounded-lg" style={{ background: "#1A1D22" }}>
+                  <span style={{ color: "#8C919A" }}>
+                    {new Date(d.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                  </span>
+                  <span className="tabular-nums">
+                    {d.calories.toLocaleString()} cal · <span style={{ color: "#FF8552" }}>{d.protein}g protein</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(<MacroTracker />);
+
+</script>
+</body>
+</html>
